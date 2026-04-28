@@ -422,6 +422,12 @@ def approve_article(request, article_id):
     article.approved = True
     article.save()
 
+    # Prepare headers safely (avoid crash if no token exists)
+    headers = {}
+    if hasattr(request.user, "auth_token"):
+        headers["Authorization"] = f"Token {request.user.auth_token.key}"
+
+    # Send POST request to external API
     try:
         requests.post(
             "http://127.0.0.1:8000/api/approved/",
@@ -430,13 +436,11 @@ def approve_article(request, article_id):
                 "title": article.title,
                 "author": article.author.username,
             },
-            headers={
-                "Authorization": f"Token {request.user.auth_token.key}"
-            },
+            headers=headers,
             timeout=2
         )
     except requests.exceptions.RequestException:
-        pass
+        pass  # Prevent app crash if request fails
 
     return redirect("home")
 
