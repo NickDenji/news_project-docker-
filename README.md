@@ -9,7 +9,7 @@ The project demonstrates:
 * Role-based access control
 * REST API design using Django REST Framework
 * Containerisation with Docker
-* Flexible database configuration for different environments
+* Proper database configuration using MariaDB
 
 ---
 
@@ -29,8 +29,8 @@ The project demonstrates:
 * Python
 * Django
 * Django REST Framework
-* SQLite (used in Docker)
-* MariaDB (optional for local development)
+* MariaDB (primary database)
+* SQLite (development-only fallback)
 * HTML (Django Templates)
 * Docker
 
@@ -44,6 +44,33 @@ The project demonstrates:
 git clone https://github.com/NickDenji/news_project_docker.git
 cd news_project
 ```
+
+---
+
+## Environment Variables & Secrets
+
+This project requires sensitive values (such as Django `SECRET_KEY` and email credentials).
+
+**These are NOT included in the repository for security reasons.**
+
+### Setup
+
+Create a `.env` file in the project root:
+
+```bash
+touch .env
+```
+
+Add the following:
+
+```env
+SECRET_KEY=your-secret-key
+DEBUG=True
+EMAIL_HOST_USER=your-email
+EMAIL_HOST_PASSWORD=your-password
+```
+
+Ensure `.env` is included in `.gitignore`.
 
 ---
 
@@ -79,33 +106,19 @@ pip install -r requirements.txt
 
 ---
 
-### 3. Configure environment variables (IMPORTANT)
+## Database Configuration (IMPORTANT)
 
-This project uses sensitive values (e.g. Django `SECRET_KEY`, email credentials).
-These are **not included in the repository** for security reasons.
+This project is designed to use **MariaDB as the primary database**.
 
-Create a `.env` file in the project root:
-
-```bash
-touch .env
-```
-
-Add the following:
-
-```env
-SECRET_KEY=your-secret-key
-DEBUG=True
-EMAIL_HOST_USER=your-email
-EMAIL_HOST_PASSWORD=your-password
-```
-
-Ensure `.env` is included in `.gitignore`.
+SQLite is included only as a **development fallback** and should not be used in production environments.
 
 ---
 
-### 4. (Optional) Configure MariaDB database
+### MariaDB Setup (Recommended)
 
-If using MariaDB locally:
+1. Install MariaDB locally
+
+2. Create a database:
 
 ```sql
 CREATE DATABASE news_db;
@@ -115,7 +128,13 @@ GRANT ALL PRIVILEGES ON news_db.* TO 'news_user'@'localhost';
 FLUSH PRIVILEGES;
 ```
 
-Update `settings.py`:
+3. Install the required database driver:
+
+```bash
+pip install mysqlclient
+```
+
+4. Update `settings.py`:
 
 ```python
 DATABASES = {
@@ -132,7 +151,26 @@ DATABASES = {
 
 ---
 
-### 5. Apply migrations
+### SQLite (Development Only)
+
+If you do not want to set up MariaDB, you can use SQLite for quick development.
+
+Update `settings.py`:
+
+```python
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
+}
+```
+
+⚠️ SQLite is not suitable for production use.
+
+---
+
+### Apply migrations
 
 ```bash
 python manage.py migrate
@@ -140,7 +178,7 @@ python manage.py migrate
 
 ---
 
-### 6. Create a superuser
+### Create superuser
 
 ```bash
 python manage.py createsuperuser
@@ -148,7 +186,7 @@ python manage.py createsuperuser
 
 ---
 
-### 7. Run the development server
+### Run development server
 
 ```bash
 python manage.py runserver
@@ -156,7 +194,7 @@ python manage.py runserver
 
 ---
 
-### 8. Access the application
+### Access the application
 
 * Main site: http://127.0.0.1:8000/
 * Admin panel: http://127.0.0.1:8000/admin/
@@ -166,7 +204,10 @@ python manage.py runserver
 
 ## Run with Docker
 
-This project can be run entirely using Docker without additional setup.
+This project can be run using Docker.
+
+⚠️ By default, Docker uses SQLite for simplicity.
+For a production-ready setup, you should configure MariaDB separately.
 
 ### Build the container
 
@@ -198,9 +239,9 @@ http://localhost:8000
 
 ## Database Notes
 
-* SQLite is used automatically inside Docker for simplicity
-* MariaDB is optional and used only for local development
-* No manual database setup is required when using Docker
+* MariaDB is the primary database for this project
+* SQLite is provided only for development convenience
+* Production deployments should always use MariaDB
 
 ---
 
@@ -220,7 +261,7 @@ Publishers represent organisations that articles belong to.
 
 * Editors can create publishers
 * Journalists assign publishers when creating articles
-* This allows grouping of content by organisation
+* Articles are grouped under organisations
 
 ---
 
@@ -243,35 +284,32 @@ Publishers represent organisations that articles belong to.
 
 * Visit: http://127.0.0.1:8000/
 * Register as Reader, Journalist, or Editor
-* Log in with your credentials
+* Log in
 
 ---
 
-### 2. Create an Article (Journalist)
+### 2. Create Article (Journalist)
 
-* Log in as a journalist
-* Create an article via UI or API
-* Articles are initially **unapproved**
+* Create article via UI or API
+* Articles start as **unapproved**
 
 ---
 
-### 3. Approve an Article (Editor)
+### 3. Approve Article (Editor)
 
-* Log in as an editor
-* Approve articles from the interface
+* Editors approve articles
 
 ---
 
 ### 4. View Articles (Reader)
 
-* Log in as a reader
 * Only approved articles are visible
 
 ---
 
-### 5. Subscribe to a Journalist
+### 5. Subscribe to Journalists
 
-Use Django shell:
+Using Django shell:
 
 ```bash
 python manage.py shell
@@ -296,7 +334,7 @@ Then access:
 
 ## Testing
 
-Run tests with:
+Run tests:
 
 ```bash
 python manage.py test
@@ -304,8 +342,8 @@ python manage.py test
 
 Tests include:
 
-* Successful API requests
-* Permission validation
+* API functionality
+* Permissions
 * Error handling
 * Subscription filtering
 
@@ -313,7 +351,7 @@ Tests include:
 
 ## Documentation
 
-Project documentation is generated using Sphinx and can be found in:
+Sphinx-generated documentation is available in:
 
 ```
 docs/build/html/index.html
@@ -323,9 +361,9 @@ docs/build/html/index.html
 
 ## Security Notes
 
-* Do NOT commit `.env` or sensitive credentials
-* Ensure all secrets are stored locally
-* Use environment variables for configuration
+* Do NOT commit `.env` or credentials
+* Use environment variables for all sensitive data
+* Keep secrets out of version control
 
 ---
 
