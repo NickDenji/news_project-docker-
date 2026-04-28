@@ -4,10 +4,10 @@
 
 This is a Django-based news application that allows **journalists to create articles**, **editors to approve them**, and **readers to view approved content**.
 
-The system demonstrates:
+The project demonstrates:
 
 * Role-based access control
-* REST API design
+* REST API design using Django REST Framework
 * Containerisation with Docker
 * Flexible database configuration for different environments
 
@@ -29,25 +29,27 @@ The system demonstrates:
 * Python
 * Django
 * Django REST Framework
-* SQLite (Docker environment)
-* MariaDB (local development)
+* SQLite (used in Docker)
+* MariaDB (optional for local development)
 * HTML (Django Templates)
 * Docker
 
 ---
 
-## Setup Instructions (Local Development)
+## Repository Setup
 
-### 1. Clone the repository
+### Clone the repository
 
 ```bash
-git clone https://github.com/NickDenji/news_project.git
+git clone https://github.com/NickDenji/news_project_docker.git
 cd news_project
 ```
 
 ---
 
-### 2. Create a virtual environment
+## Local Development Setup (venv)
+
+### 1. Create a virtual environment
 
 ```bash
 python -m venv .venv
@@ -69,7 +71,7 @@ source .venv/bin/activate
 
 ---
 
-### 3. Install dependencies
+### 2. Install dependencies
 
 ```bash
 pip install -r requirements.txt
@@ -77,19 +79,43 @@ pip install -r requirements.txt
 
 ---
 
-### 4. Configure Database (MariaDB - Optional)
+### 3. Configure environment variables (IMPORTANT)
 
-If you want to run the project with MariaDB locally:
+This project uses sensitive values (e.g. Django `SECRET_KEY`, email credentials).
+These are **not included in the repository** for security reasons.
+
+Create a `.env` file in the project root:
+
+```bash
+touch .env
+```
+
+Add the following:
+
+```env
+SECRET_KEY=your-secret-key
+DEBUG=True
+EMAIL_HOST_USER=your-email
+EMAIL_HOST_PASSWORD=your-password
+```
+
+Ensure `.env` is included in `.gitignore`.
+
+---
+
+### 4. (Optional) Configure MariaDB database
+
+If using MariaDB locally:
 
 ```sql
 CREATE DATABASE news_db;
 
-CREATE USER 'news_user'@'localhost' IDENTIFIED BY 'password123';
+CREATE USER 'news_user'@'localhost' IDENTIFIED BY 'your_password';
 GRANT ALL PRIVILEGES ON news_db.* TO 'news_user'@'localhost';
 FLUSH PRIVILEGES;
 ```
 
-Then update `settings.py`:
+Update `settings.py`:
 
 ```python
 DATABASES = {
@@ -97,7 +123,7 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'news_db',
         'USER': 'news_user',
-        'PASSWORD': 'password123',
+        'PASSWORD': 'your_password',
         'HOST': 'localhost',
         'PORT': '3306',
     }
@@ -114,7 +140,7 @@ python manage.py migrate
 
 ---
 
-### 6. Create superuser
+### 6. Create a superuser
 
 ```bash
 python manage.py createsuperuser
@@ -138,9 +164,9 @@ python manage.py runserver
 
 ---
 
-## Run with Docker (Recommended for Submission)
+## Run with Docker
 
-This project can be run entirely using Docker without setting up a database manually.
+This project can be run entirely using Docker without additional setup.
 
 ### Build the container
 
@@ -156,31 +182,35 @@ docker build -t news-app .
 docker run -p 8000:8000 news-app
 ```
 
+This will automatically:
+
+* Install dependencies
+* Apply migrations
+* Start the Django development server
+
 ---
 
 ### Access the application
 
-```text
 http://localhost:8000
-```
 
 ---
 
 ## Database Notes
 
-* **SQLite is used automatically inside Docker** for simplicity and portability.
-* **MariaDB is optional** and intended for local development only.
-* No additional database setup is required when using Docker.
+* SQLite is used automatically inside Docker for simplicity
+* MariaDB is optional and used only for local development
+* No manual database setup is required when using Docker
 
 ---
 
 ## User Roles
 
-| Role       | Permissions                                     |
-| ---------- | ----------------------------------------------- |
-| Reader     | View approved articles, view subscribed content |
-| Journalist | Create and update own articles                  |
-| Editor     | Approve and delete articles                     |
+| Role       | Permissions                                |
+| ---------- | ------------------------------------------ |
+| Reader     | View approved articles, subscribed content |
+| Journalist | Create and update their own articles       |
+| Editor     | Approve and delete articles                |
 
 ---
 
@@ -188,11 +218,9 @@ http://localhost:8000
 
 Publishers represent organisations that articles belong to.
 
-Editors can create publishers through the application.
-
-When creating an article, journalists can assign a publisher to it.
-
-This ensures that articles are grouped under specific organisations and addresses how publishers are created and used within the system.
+* Editors can create publishers
+* Journalists assign publishers when creating articles
+* This allows grouping of content by organisation
 
 ---
 
@@ -200,9 +228,9 @@ This ensures that articles are grouped under specific organisations and addresse
 
 | Method | Endpoint                     | Description                          |
 | ------ | ---------------------------- | ------------------------------------ |
-| GET    | `/api/articles/`             | List all approved articles           |
+| GET    | `/api/articles/`             | List approved articles               |
 | GET    | `/api/articles/subscribed/`  | Articles from subscribed journalists |
-| GET    | `/api/articles/<id>/`        | Retrieve single article              |
+| GET    | `/api/articles/<id>/`        | Retrieve a single article            |
 | POST   | `/api/articles/create/`      | Create article (journalists only)    |
 | PUT    | `/api/articles/<id>/update/` | Update article                       |
 | DELETE | `/api/articles/<id>/delete/` | Delete article                       |
@@ -214,40 +242,36 @@ This ensures that articles are grouped under specific organisations and addresse
 ### 1. Register & Login
 
 * Visit: http://127.0.0.1:8000/
-* Register as:
-
-  * Reader
-  * Journalist
-  * Editor
-* Login with your credentials
+* Register as Reader, Journalist, or Editor
+* Log in with your credentials
 
 ---
 
 ### 2. Create an Article (Journalist)
 
-* Login as a journalist
+* Log in as a journalist
 * Create an article via UI or API
-* Articles are created as **not approved**
+* Articles are initially **unapproved**
 
 ---
 
 ### 3. Approve an Article (Editor)
 
-* Login as an editor
-* Approve articles from the homepage
+* Log in as an editor
+* Approve articles from the interface
 
 ---
 
 ### 4. View Articles (Reader)
 
-* Login as a reader
+* Log in as a reader
 * Only approved articles are visible
 
 ---
 
 ### 5. Subscribe to a Journalist
 
-Subscriptions can be managed via Django shell:
+Use Django shell:
 
 ```bash
 python manage.py shell
@@ -278,21 +302,30 @@ Run tests with:
 python manage.py test
 ```
 
-### Coverage includes:
+Tests include:
 
-* Successful requests (e.g. journalist creating articles)
+* Successful API requests
 * Permission validation
-* Failed requests (e.g. reader restricted actions)
+* Error handling
 * Subscription filtering
 
 ---
 
-## Notes
+## Documentation
 
-* Docker setup includes automatic migrations on startup
-* SQLite database is used in container for ease of setup
-* MariaDB configuration is optional for local development
-* Ensure dependencies are installed from `requirements.txt`
+Project documentation is generated using Sphinx and can be found in:
+
+```
+docs/build/html/index.html
+```
+
+---
+
+## Security Notes
+
+* Do NOT commit `.env` or sensitive credentials
+* Ensure all secrets are stored locally
+* Use environment variables for configuration
 
 ---
 
