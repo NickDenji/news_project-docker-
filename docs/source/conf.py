@@ -1,10 +1,14 @@
 import os
 import sys
-import django
 
 sys.path.insert(0, os.path.abspath('../..'))
-os.environ['DJANGO_SETTINGS_MODULE'] = 'news_project.settings'
-django.setup()
+
+autodoc_mock_imports = [
+    "django",
+    "django.db",
+    "django.conf",
+    "rest_framework",
+]
 
 
 # Configuration file for the Sphinx documentation builder.
@@ -22,7 +26,9 @@ author = 'nickdenji'
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
-extensions = []
+extensions = [
+    'sphinx.ext.autodoc',
+]
 
 templates_path = ['_templates']
 exclude_patterns = []
